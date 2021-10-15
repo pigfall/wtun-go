@@ -1,6 +1,7 @@
 package wtun
 
 import(
+	"log"
 	"errors"
 		"unsafe"
 		"github.com/pigfall/tzzGoUtil/syscall"
@@ -102,6 +103,7 @@ func (this *Tun) Read(b []byte)(n int,err error){
 			this.sessionHandle,
 			r0,
 		)
+		log.Println("read packet")
 		return n,nil
 	}
 }
@@ -113,10 +115,12 @@ func (this *Tun) Write(b []byte)(n int,err error){
 		return 0,err
 	}
 	bufToUse := unsafe.Slice((*byte)(unsafe.Pointer(bufAddr)),pacSize)
+	copy(bufToUse,b)
 	_,_,err = procSendPacket.Call(this.sessionHandle,uintptr(unsafe.Pointer(&bufToUse[0])))
 	if err != nil{
 		return 0,err
 	}
+	log.Println("write packet")
 
 	return pacSize,nil
 }
@@ -134,6 +138,11 @@ func (this *Tun) SetIp(ipNet *net.IpWithMask)error{
 	if err != nil{
 		return fmt.Errorf("%w, %v, %v",err,errOut,out)
 	}
+	return nil
+}
+
+func (this *Tun)Close()error{
+	// TODO
 	return nil
 }
 
