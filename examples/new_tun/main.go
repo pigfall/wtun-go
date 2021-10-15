@@ -1,7 +1,7 @@
 package main
 
 import (
-	"time"
+		"github.com/pigfall/tzzGoUtil/net"
 	"fmt"
 	wingo "github.com/pigfall/wtun-go"
 )		
@@ -16,5 +16,20 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(tun)
-	time.Sleep(time.Second*100)
+	ipToSet,err := net.FromIpSlashMask("10.7.0.1/8")
+	if err != nil{
+		panic(err)
+	}
+	err = tun.SetIp(ipToSet)
+	if err != nil{
+		panic(err)
+	}
+	var buf = make([]byte,1024*4)
+	for{
+		n,err := tun.Read(buf)
+		if err != nil{
+			panic(err)
+		}
+		fmt.Println(buf[:n])
+	}
 }
