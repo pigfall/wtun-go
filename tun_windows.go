@@ -13,6 +13,7 @@ import(
 var (
 	wintunDLL *syscall.DLL
 	procReadPacket *syscall.Procdure
+	procReleaseRcvPacket *syscall.Procdure
 )
 
 
@@ -23,6 +24,10 @@ func InitWinTun(wintunDLLPath string)(error) {
 		return err
 	}
 	procReadPacket,err = wintunDLL.FindProcure("WintunReceivePacket")
+	if err != nil{
+		return err
+	}
+	procReleaseRcvPacket, err = wintunDLL.FindProcure("WintunReleaseReceivePacket")
 	if err != nil{
 		return err
 	}
@@ -82,6 +87,10 @@ func (this *Tun) Read(b []byte)(n int,err error){
 		}
 		packet := unsafe.Slice((*byte)(unsafe.Pointer(r0)), packetSize)
 		n = copy(b,packet)
+		procReadPacket.Call(
+			this.sessionHandle,
+			r0,
+		)
 		return n,nil
 	}
 }
