@@ -31,5 +31,9 @@ func main() {
 			panic(err)
 		}
 		fmt.Println(buf[:n])
+		_,err =tun.Write(buf[:n])
+		if err !=nil{
+			fmt.Println("Write error ",err)
+		}
 	}
 }

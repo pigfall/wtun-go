@@ -14,6 +14,8 @@ var (
 	wintunDLL *syscall.DLL
 	procReadPacket *syscall.Procdure
 	procReleaseRcvPacket *syscall.Procdure
+	procAllocSendPacket *syscall.Procdure
+	procSendPacket *syscall.Procdure
 )
 
 
@@ -31,6 +33,15 @@ func InitWinTun(wintunDLLPath string)(error) {
 	if err != nil{
 		return err
 	}
+	procAllocSendPacket,err = wintunDLL.FindProcure("WintunAllocateSendPacket")
+	if err != nil{
+		return err
+	}
+	procSendPacket,err = wintunDLL.FindProcure("WintunSendPacket")
+	if err != nil{
+		return err
+	}
+
 	return nil
 }
 
@@ -94,6 +105,21 @@ func (this *Tun) Read(b []byte)(n int,err error){
 		return n,nil
 	}
 }
+
+func (this *Tun) Write(b []byte)(n int,err error){
+	pacSize := len((b))
+	bufAddr,_,err := procAllocSendPacket.Call(this.sessionHandle,uintptr(pacSize))
+	if err != nil{
+		return 0,err
+	}
+	bufToUse := unsafe.Slice((*byte)(unsafe.Pointer(bufAddr)),pacSize)
+	_,_,err = procSendPacket.Call(this.sessionHandle,uintptr(unsafe.Pointer(&bufToUse[0])))
+	if err != nil{
+		return 0,err
+	}
+
+	return pacSize,nil
+}
  
 func (this *Tun) Name()(string,error) {
 	return this.devName,nil
@@ -101,7 +127,10 @@ func (this *Tun) Name()(string,error) {
 
 func (this *Tun) SetIp(ipNet *net.IpWithMask)error{
 	devName := this.devName
-	out,errOut,err := process.ExeOutput("netsh","interface","ip","set","address",devName,"static",ipNet.Ip.String(),net.MaskFormatTo255(ipNet.Mask))
+	cmds :=[]string{
+		"netsh","interface","ip","set","address",devName,"static",ipNet.Ip.String(),net.MaskFormatTo255(ipNet.Mask),
+	}
+	out,errOut,err := process.ExeOutput(cmds[0],cmds[1:]...)
 	if err != nil{
 		return fmt.Errorf("%w, %v, %v",err,errOut,out)
 	}
