@@ -2,6 +2,7 @@ package wtun
 
 import (
 	"log"
+	"sync"
 	// "log"
 	"errors"
 	"fmt"
@@ -61,6 +62,8 @@ type Tun struct {
 	handle        uintptr
 	sessionHandle uintptr
 	devName       string
+	l sync.Mutex
+	closed bool
 }
 
 func NewTun(devName string) (*Tun, error) {
@@ -160,6 +163,14 @@ func (this *Tun) SetIp(ipNet *net.IpWithMask) error {
 }
 
 func (this *Tun)Close()error{
+	this.l.Lock()
+	defer this.l.Unlock()
+	if this.closed{
+		return nil
+	}
+	this.closed = true
+	log.Println("tun closing")
 	procCloseAdaptor.Call(this.handle)
+	log.Println("tun closed")
 	return  nil
 }
