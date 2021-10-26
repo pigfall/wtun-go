@@ -17,9 +17,10 @@ var (
 	wintunDLL            *syscall.DLL
 	procReadPacket       *syscall.Procdure
 	procReleaseRcvPacket *syscall.Procdure
-	procAllocSendPacket  *syscall.Procdure
-	procSendPacket       *syscall.Procdure
 	procWintunGetReadWaitEvent *syscall.Procdure       
+	procAllocSendPacket *syscall.Procdure
+	procSendPacket *syscall.Procdure
+	procCloseAdaptor *syscall.Procdure
 )
 
 func InitWinTun(wintunDLLPath string) error {
@@ -46,6 +47,10 @@ func InitWinTun(wintunDLLPath string) error {
 	}
 	procWintunGetReadWaitEvent, err = wintunDLL.FindProcure("WintunGetReadWaitEvent")
 	if err != nil {
+		return err
+	}
+	procCloseAdaptor,err = wintunDLL.FindProcure("WintunCloseAdapter")
+	if err != nil{
 		return err
 	}
 
@@ -154,7 +159,7 @@ func (this *Tun) SetIp(ipNet *net.IpWithMask) error {
 	return nil
 }
 
-func (this *Tun) Close() error {
-	// TODO
-	return nil
+func (this *Tun)Close()error{
+	procCloseAdaptor.Call(this.handle)
+	return  nil
 }
